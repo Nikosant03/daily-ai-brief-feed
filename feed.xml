@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Daily AI Brief — Test</title>
+    <link>https://nikosant03.github.io/daily-ai-brief-feed/</link>
+    <description>Spike test feed — will be replaced.</description>
+    <item>
+      <title>Test episode 1</title>
+      <enclosure url="https://github.com/Nikosant03/daily-ai-brief-feed/releases/download/episodes/test.mp3" length="239688" type="audio/mpeg"/>
+      <pubDate>Sat, 19 Sep 2026 07:00:00 +0300</pubDate>
+      <guid>test-1</guid>
+    </item>
+    <item>
+      <title>Test episode 2</title>
+      <enclosure url="https://github.com/Nikosant03/daily-ai-brief-feed/releases/download/episodes/test.mp3" length="239688" type="audio/mpeg"/>
+      <pubDate>Sun, 20 Sep 2026 07:00:00 +0300</pubDate>
+      <guid>test-2</guid>
+    </item>
+  </channel>
+</rss>
