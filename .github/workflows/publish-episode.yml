@@ -1,0 +1,43 @@
+name: Publish episode
+
+# The ai-news-pipeline routine (running inside a Claude Code cloud sandbox)
+# cannot upload the mp3 as a GitHub Release asset directly -- its egress
+# proxy rejects binary POST bodies to uploads.github.com. Instead it commits
+# the mp3 to pending/ and pushes, which fires this workflow. A GitHub Actions
+# runner has no such proxy and is already authenticated via GITHUB_TOKEN, so
+# the actual release upload and feed.xml rebuild happen here.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pending/**.mp3"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-episode
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Upload pending episodes, prune, rebuild feed.xml
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/publish_and_build_feed.py
+
+      - name: Commit feed.xml and clear published pending files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add feed.xml pending
+          git diff --cached --quiet || git commit -m "chore: publish episode and update feed"
+          git push
