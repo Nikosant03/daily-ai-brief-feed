@@ -4,6 +4,11 @@
     <title>Daily AI Brief</title>
     <link>https://nikosant03.github.io/daily-ai-brief-feed/</link>
     <description>Daily AI news bulletin.</description>
-
+    <item>
+      <title>AI Brief — 2026-09-23</title>
+      <enclosure url="https://github.com/Nikosant03/daily-ai-brief-feed/releases/download/episodes/2026-09-23.mp3" length="3071808" type="audio/mpeg"/>
+      <pubDate>Wed, 23 Sep 2026 07:00:00 +0300</pubDate>
+      <guid>2026-09-23.mp3</guid>
+    </item>
   </channel>
 </rss>
