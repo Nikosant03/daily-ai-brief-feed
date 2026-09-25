@@ -5,6 +5,12 @@
     <link>https://nikosant03.github.io/daily-ai-brief-feed/</link>
     <description>Daily AI news bulletin.</description>
     <item>
+      <title>AI Brief — 2026-09-25</title>
+      <enclosure url="https://github.com/Nikosant03/daily-ai-brief-feed/releases/download/episodes/2026-09-25.mp3" length="3021840" type="audio/mpeg"/>
+      <pubDate>Fri, 25 Sep 2026 07:00:00 +0300</pubDate>
+      <guid>2026-09-25.mp3</guid>
+    </item>
+    <item>
       <title>AI Brief — 2026-09-24</title>
       <enclosure url="https://github.com/Nikosant03/daily-ai-brief-feed/releases/download/episodes/2026-09-24.mp3" length="3298752" type="audio/mpeg"/>
       <pubDate>Thu, 24 Sep 2026 07:00:00 +0300</pubDate>
