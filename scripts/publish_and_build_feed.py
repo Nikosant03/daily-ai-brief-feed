@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -30,7 +31,20 @@ DATED_MP3 = re.compile(r"^\d{4}-\d{2}-\d{2}\.mp3$")
 
 
 def _gh(*args: str) -> str:
-    return subprocess.run(["gh", *args], check=True, capture_output=True, text=True).stdout
+    """Run `gh` and, on failure, raise something that says why.
+
+    `check=True` with `capture_output=True` raised a CalledProcessError whose
+    message is only the exit code and the argv — gh's own explanation went
+    into the captured stderr and was thrown away. The 2026-09-28 failure log
+    therefore showed a traceback ending in "returned non-zero exit status 1"
+    and nothing about the cause. Put the stderr in the exception."""
+    result = subprocess.run(["gh", *args], capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"`gh {' '.join(args)}` failed (exit {result.returncode}): "
+            f"{result.stderr.strip() or '<no stderr>'}"
+        )
+    return result.stdout
 
 
 def ensure_release_exists() -> None:
@@ -39,12 +53,33 @@ def ensure_release_exists() -> None:
         _gh("release", "create", RELEASE_TAG, "--title", "Episodes", "--notes", "Rolling episode window.")
 
 
-def upload_pending_episodes() -> list[Path]:
-    uploaded = []
+def upload_pending_episodes() -> tuple[list[Path], list[str]]:
+    """Publish every usable mp3 waiting in pending/, and report the rest.
+
+    This loop used to abort on the first file gh refused, which made one bad
+    render block every later day's episode as well: a 0-byte 2026-09-28.mp3
+    stalled the whole feed at 2026-09-25 until 2026-10-01, with the perfectly
+    good 2026-09-30 episode queued behind it. A single unpublishable file must
+    cost that one day only, so problems are collected and returned rather than
+    raised — main() still exits non-zero afterwards so the run goes red and
+    GitHub emails about it."""
+    uploaded: list[Path] = []
+    problems: list[str] = []
     for mp3 in sorted(PENDING_DIR.glob("*.mp3")):
-        _gh("release", "upload", RELEASE_TAG, str(mp3), "--clobber")
+        # A 0-byte file is a failed text-to-speech render, not an episode. It
+        # has no business in a podcast feed even if gh would take it, so it is
+        # discarded here rather than retried forever on every later push.
+        if mp3.stat().st_size == 0:
+            problems.append(f"{mp3.name} was empty (0 bytes) — discarded, not published")
+            mp3.unlink()
+            continue
+        try:
+            _gh("release", "upload", RELEASE_TAG, str(mp3), "--clobber")
+        except RuntimeError as exc:
+            problems.append(f"{mp3.name} failed to upload: {exc}")
+            continue
         uploaded.append(mp3)
-    return uploaded
+    return uploaded, problems
 
 
 def list_dated_assets() -> list[dict]:
@@ -97,14 +132,22 @@ def build_feed_xml(assets: list[dict]) -> str:
 """
 
 
-def main() -> None:
+def main() -> int:
     ensure_release_exists()
-    uploaded = upload_pending_episodes()
+    uploaded, problems = upload_pending_episodes()
+    # The feed is rebuilt from whatever assets actually exist, so it is still
+    # correct (just missing the bad day) when some file could not be published.
     remaining = delete_aged_out(list_dated_assets())
     Path("feed.xml").write_text(build_feed_xml(remaining), encoding="utf-8")
     for mp3 in uploaded:
         mp3.unlink()
+    if problems:
+        print("PROBLEMS THIS RUN:", file=sys.stderr)
+        for problem in problems:
+            print(f"  - {problem}", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

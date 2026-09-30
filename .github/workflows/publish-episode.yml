@@ -7,6 +7,10 @@ name: Publish episode
 # runner has no such proxy and is already authenticated via GITHUB_TOKEN, so
 # the actual release upload and feed.xml rebuild happen here.
 on:
+  # Manual trigger, so a stuck pending/ queue can be drained without waiting
+  # for the next daily push. Recovering from the 2026-09-28 stall needed
+  # exactly this and there was no way to do it.
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
@@ -34,7 +38,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: python scripts/publish_and_build_feed.py
 
+      # Runs even when the step above reported a problem. Without this, a
+      # single unpublishable file meant feed.xml was never committed and the
+      # published files were never cleared from pending/ -- so the same bad
+      # file was retried, and failed, on every subsequent push. That is what
+      # kept the feed stuck on 2026-09-25 for three days. The job still ends
+      # red, so the failure is still visible; it just no longer loses the good
+      # work that did happen.
       - name: Commit feed.xml and clear published pending files
+        if: ${{ !cancelled() }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
