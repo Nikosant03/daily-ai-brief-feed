@@ -90,3 +90,45 @@ def test_clean_run_reports_no_problems(pending, monkeypatch):
 
     assert [p.name for p in uploaded] == ["2026-09-30.mp3"]
     assert problems == []
+
+
+def _asset(name: str, size: int = 1000) -> dict:
+    return {
+        "name": name,
+        "size": size,
+        "browser_download_url": f"https://example.invalid/{name}",
+        "id": name,
+    }
+
+
+def test_the_greek_edition_is_labelled_in_the_feed():
+    xml = pf.build_feed_xml([_asset("2026-10-01.mp3"), _asset("2026-10-01-el.mp3")])
+
+    assert "<title>AI Brief — 2026-10-01</title>" in xml
+    assert "<title>AI Brief — 2026-10-01 (Ελληνικά)</title>" in xml
+
+
+def test_the_two_editions_of_a_day_do_not_share_a_pubdate():
+    """Identical pubDates let each podcast app order the pair however it likes,
+    so which language plays first would change from phone to phone."""
+    english = pf._rfc822_date("2026-10-01.mp3")
+    greek = pf._rfc822_date("2026-10-01-el.mp3")
+
+    assert english != greek
+    assert "07:00:00" in english and "07:05:00" in greek
+
+
+def test_greek_episodes_are_recognised_as_episodes():
+    assets = [_asset("2026-10-01-el.mp3"), _asset("notes.txt.mp3"), _asset("2026-10-01.mp3")]
+    kept = [a for a in assets if pf.DATED_MP3.match(a["name"])]
+
+    assert sorted(a["name"] for a in kept) == ["2026-10-01-el.mp3", "2026-10-01.mp3"]
+
+
+def test_the_retention_window_is_still_thirty_days_with_two_languages():
+    assert pf.KEEP == 60, "30 days x 2 editions; a KEEP of 30 would silently halve the window"
+
+
+def test_a_name_that_is_not_an_episode_is_rejected_rather_than_guessed():
+    with pytest.raises(ValueError):
+        pf._parts("spike-test.mp3")

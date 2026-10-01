@@ -23,11 +23,14 @@ from zoneinfo import ZoneInfo
 
 CYPRUS = ZoneInfo("Asia/Nicosia")
 RELEASE_TAG = "episodes"
-KEEP = 30
+# Two episodes a day now (English, then the Greek translation), so 60 assets is
+# the same 30-day window the feed has always kept -- not a doubled retention.
+KEEP = 60
 FEED_TITLE = "Daily AI Brief"
 FEED_LINK = "https://nikosant03.github.io/daily-ai-brief-feed/"
 PENDING_DIR = Path("pending")
-DATED_MP3 = re.compile(r"^\d{4}-\d{2}-\d{2}\.mp3$")
+# "2026-10-01.mp3" is the English bulletin, "2026-10-01-el.mp3" the Greek one.
+DATED_MP3 = re.compile(r"^(?P<date>\d{4}-\d{2}-\d{2})(?P<lang>-el)?\.mp3$")
 
 
 def _gh(*args: str) -> str:
@@ -100,9 +103,21 @@ def delete_aged_out(assets: list[dict]) -> list[dict]:
     return [a for a in assets if a["name"] not in stale_names]
 
 
+def _parts(name: str) -> tuple[str, bool]:
+    """Split an asset name into its date and whether it is the Greek edition."""
+    match = DATED_MP3.match(name)
+    if match is None:
+        raise ValueError(f"not an episode asset name: {name}")
+    return match.group("date"), match.group("lang") is not None
+
+
 def _rfc822_date(name: str) -> str:
-    date_part = name.removesuffix(".mp3")
-    dt = datetime.strptime(date_part, "%Y-%m-%d").replace(hour=7, tzinfo=CYPRUS)
+    date_part, is_greek = _parts(name)
+    # The two editions of a day are published together, so they would otherwise
+    # carry an identical pubDate and podcast apps would order them however they
+    # liked. Five minutes apart makes the order the same in every app.
+    minute = 5 if is_greek else 0
+    dt = datetime.strptime(date_part, "%Y-%m-%d").replace(hour=7, minute=minute, tzinfo=CYPRUS)
     return dt.strftime("%a, %d %b %Y %H:%M:%S %z")
 
 
@@ -110,10 +125,13 @@ def build_feed_xml(assets: list[dict]) -> str:
     ordered = sorted(assets, key=lambda a: a["name"], reverse=True)
     items = []
     for asset in ordered:
-        date_part = asset["name"].removesuffix(".mp3")
+        date_part, is_greek = _parts(asset["name"])
+        title = f"AI Brief — {date_part}"
+        if is_greek:
+            title += " (Ελληνικά)"
         items.append(
             f"""    <item>
-      <title>AI Brief — {date_part}</title>
+      <title>{title}</title>
       <enclosure url="{asset['browser_download_url']}" length="{asset['size']}" type="audio/mpeg"/>
       <pubDate>{_rfc822_date(asset['name'])}</pubDate>
       <guid>{asset['name']}</guid>
