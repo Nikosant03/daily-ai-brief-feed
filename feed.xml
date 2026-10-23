@@ -5,6 +5,18 @@
     <link>https://nikosant03.github.io/daily-ai-brief-feed/</link>
     <description>Daily AI news bulletin.</description>
     <item>
+      <title>AI Brief — 2026-10-23</title>
+      <enclosure url="https://github.com/Nikosant03/daily-ai-brief-feed/releases/download/episodes/2026-10-23.mp3" length="4300416" type="audio/mpeg"/>
+      <pubDate>Fri, 23 Oct 2026 07:00:00 +0300</pubDate>
+      <guid>2026-10-23.mp3</guid>
+    </item>
+    <item>
+      <title>AI Brief — 2026-10-23 (Ελληνικά)</title>
+      <enclosure url="https://github.com/Nikosant03/daily-ai-brief-feed/releases/download/episodes/2026-10-23-el.mp3" length="4480128" type="audio/mpeg"/>
+      <pubDate>Fri, 23 Oct 2026 07:05:00 +0300</pubDate>
+      <guid>2026-10-23-el.mp3</guid>
+    </item>
+    <item>
       <title>AI Brief — 2026-10-21</title>
       <enclosure url="https://github.com/Nikosant03/daily-ai-brief-feed/releases/download/episodes/2026-10-21.mp3" length="1186272" type="audio/mpeg"/>
       <pubDate>Wed, 21 Oct 2026 07:00:00 +0300</pubDate>
